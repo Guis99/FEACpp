@@ -13,6 +13,7 @@ std::vector<double> Utils::genGaussPoints(int degree) {
 }
 
 std::vector<double> Utils::evalLagrangeInterp(int k, std::vector<double> evalPoints, std::vector<double> &gaussPoints) {
+    // Evaluate the kth Lagrange interpolant at the given locations
     int nNodes = gaussPoints.size();
     int nPoints = evalPoints.size();
 
@@ -35,8 +36,20 @@ std::vector<double> Utils::evalLagrangeInterp(int k, std::vector<double> evalPoi
 
 }
 
-std::vector<double> Utils::numDeriv(double h, std::vector<double> evalPoints) {
+std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPoints, std::vector<double> &gaussPoints) {
+    // Fourth-order four-point derivative approximation given by
+    // (-f(x + 2h) + 8f(x + h) − 8f(x -h) + f(x 2h))/12h
+
     std::vector<double> out;
+    double denom = 1/(12*h);
+
+    for (int i = 0; i < evalPoints.size(); i++) {
+        double currPoint = evalPoints[i];
+        std::vector<double> centeredPoints = {currPoint+2*h,currPoint+h,currPoint-h,currPoint-2*h};
+        std::vector<double> funcVals = Utils::evalLagrangeInterp(k, centeredPoints, gaussPoints);
+
+        out[i] = (-funcVals[0]+8*funcVals[1]-8*funcVals[2]+funcVals[3])/denom;
+    }
 
     return out;
 }
