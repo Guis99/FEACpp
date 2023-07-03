@@ -53,3 +53,7 @@ std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPo
 
     return out;
 }
+
+std::vector<double> Utils::integrateLagrange(std::vector<double> &gaussPoints) {
+    
+}
