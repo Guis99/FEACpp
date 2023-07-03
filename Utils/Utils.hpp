@@ -1,5 +1,3 @@
-#include "..\3PDep\eigen-3.4.0\Eigen\Eigen"
-
 # define PI 3.1415926535897932384
  
 
