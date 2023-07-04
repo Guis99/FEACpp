@@ -1,10 +1,11 @@
 #include <iostream>
 #include <algorithm>
-#include "Utils.hpp"
+#include "..\include\LagrangeInterpolant.hpp"
 
 std::vector<double> Utils::genGaussPoints(int degree) {
     std::vector<double> gaussPoints;
     gaussPoints.reserve(degree+1);
+
     for (int i=0; i < degree+1; i++) {
         gaussPoints[i] = -cos(i*PI/degree);
     }
@@ -20,10 +21,10 @@ std::vector<double> Utils::evalLagrangeInterp(int k, std::vector<double> evalPoi
     std::vector<double> out;
     out.reserve(nPoints);  
 
+    double curr;
     for (int i = 0; i < nPoints; i++) {
-        double curr = 1;
+        curr = 1.0;
         double point = evalPoints[i];
-
         for (int j = 0; j < nNodes; j++) {
             if (j != k) {
             curr *= (point-gaussPoints[j])/(gaussPoints[k]-gaussPoints[j]);
@@ -33,7 +34,6 @@ std::vector<double> Utils::evalLagrangeInterp(int k, std::vector<double> evalPoi
     }
 
     return out;
-
 }
 
 std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPoints, std::vector<double> &gaussPoints) {
@@ -55,5 +55,31 @@ std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPo
 }
 
 std::vector<double> Utils::integrateLagrange(std::vector<double> &gaussPoints) {
-    
+    int nInt = gaussPoints.size();
+
+    std::vector<double> evalPoints;
+    std::vector<double> out;
+    std::vector<double> h;
+    evalPoints.reserve(2*nInt-1);
+    out.reserve(nInt);
+    h.reserve(nInt-1);
+
+    for (int i = 0; i < nInt-1; i++) {
+        evalPoints[2*i] = gaussPoints[i];
+        h[i] = (gaussPoints[i+1]-gaussPoints[i])/2;
+        evalPoints[2*i+1] = gaussPoints[i]+h[i];
+    }
+    evalPoints.push_back(gaussPoints[nInt-1]);
+
+    double currInt;
+    for (int k = 0; k < nInt; k++) {
+        currInt = 0.0;
+        std::vector<double> vals = Utils::evalLagrangeInterp(k, evalPoints, gaussPoints);
+        for (int i = 0; i < nInt-1; i++) {
+            currInt += h[i]*(vals[2*i]+4*vals[2*i+1]+vals[2*i+2]);
+        }
+        out[k] = currInt/3;
+    }
+
+    return out;
 }

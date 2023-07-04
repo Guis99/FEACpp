@@ -2,6 +2,8 @@
 
 #include "..\Utils\Utils.hpp"
 
-namespace Solvers {
-    
-}
+// System matrix
+#include "include\MatrixAssembly.hpp"
+#include "include\RHSAssembly.hpp"
+#include "include\ApplyBoundaryConditions.hpp"
+
