@@ -1,5 +1,3 @@
 #include "..\Utils\Utils.hpp"
 
-namespace Meshing {
-    
-}
+#include "..\include\BasicMesh2D.hpp"
