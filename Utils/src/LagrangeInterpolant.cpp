@@ -55,6 +55,7 @@ std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPo
 }
 
 std::vector<double> Utils::integrateLagrange(std::vector<double> &gaussPoints) {
+    // Integrates given basis polynomials with Simpson's rule
     int nInt = gaussPoints.size();
 
     std::vector<double> evalPoints;
