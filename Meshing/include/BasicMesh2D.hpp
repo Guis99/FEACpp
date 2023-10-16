@@ -6,10 +6,10 @@ namespace Meshing {
         class Element {
             public:
                 int EID;
-                std::vector<Node> Nodes;
+                std::vector<int> Nodes;
                 double Boundaries[4];
 
-                Element(int EID, std::vector<Node> Nodes, double Boundaries[4]);
+                Element(int EID, std::vector<int> Nodes, double Boundaries[4]);
         };
 
         class Node {
@@ -34,11 +34,14 @@ namespace Meshing {
 
                 BasicMesh2D(int xdeg, int ydeg, std::vector<double> xdiv, std::vector<double> ydiv, double xstart, double ystart);
 
-                int numNodes() { return this->Nodes.size(); }
-                int numElems() { return this->Elements.size(); }
+                int numNodes() { return Nodes.size(); }
+                int numElems() { return Elements.size(); }
 
                 std::vector<std::array<double, 2>> allNodePos();
                 std::vector<std::array<double, 2>> posInElem(int ElemID);
+                int nNodes();
+                int nElements();
+                static double transformPoint(double x, double a, double b);
         };
     }
 }

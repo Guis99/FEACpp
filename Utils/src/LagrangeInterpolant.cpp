@@ -1,13 +1,14 @@
 #include <iostream>
 #include <algorithm>
 #include "..\include\LagrangeInterpolant.hpp"
+#include <cmath>
 
 std::vector<double> Utils::genGaussPoints(int degree) {
     std::vector<double> gaussPoints;
     gaussPoints.reserve(degree+1);
 
     for (int i=0; i < degree+1; i++) {
-        gaussPoints[i] = -cos(i*PI/degree);
+        gaussPoints.push_back(-cos(i*PI/degree));
     }
 
     return gaussPoints;
@@ -40,15 +41,18 @@ std::vector<double> Utils::numDeriv(double h, int k, std::vector<double> &evalPo
     // Fourth-order four-point derivative approximation given by
     // (-f(x + 2h) + 8f(x + h) − 8f(x -h) + f(x 2h))/12h
 
+    // use step size h <= .001 for best results
+
     std::vector<double> out;
-    double denom = 1/(12*h);
+    out.reserve(evalPoints.size());
+    double denom = 12*h;
 
     for (int i = 0; i < evalPoints.size(); i++) {
         double currPoint = evalPoints[i];
         std::vector<double> centeredPoints = {currPoint+2*h,currPoint+h,currPoint-h,currPoint-2*h};
         std::vector<double> funcVals = Utils::evalLagrangeInterp(k, centeredPoints, gaussPoints);
 
-        out[i] = (-funcVals[0]+8*funcVals[1]-8*funcVals[2]+funcVals[3])/denom;
+        out.push_back((-funcVals[0]+8*funcVals[1]-8*funcVals[2]+funcVals[3])/denom);
     }
 
     return out;
@@ -60,26 +64,27 @@ std::vector<double> Utils::integrateLagrange(std::vector<double> &gaussPoints) {
 
     std::vector<double> evalPoints;
     std::vector<double> out;
-    std::vector<double> h;
-    evalPoints.reserve(2*nInt-1);
-    out.reserve(nInt);
-    h.reserve(nInt-1);
+    int numDiv = 1000;
+    double h = 2/double(numDiv);
 
-    for (int i = 0; i < nInt-1; i++) {
-        evalPoints[2*i] = gaussPoints[i];
-        h[i] = (gaussPoints[i+1]-gaussPoints[i])/2;
-        evalPoints[2*i+1] = gaussPoints[i]+h[i];
+    evalPoints.resize(numDiv);
+    out.reserve(nInt);
+
+    double currLoc = -1;
+    for (int i = 0; i < numDiv; i++) {
+        evalPoints[i] = currLoc;
+        currLoc += h;
     }
-    evalPoints.push_back(gaussPoints[nInt-1]);
+    evalPoints.push_back(1);
 
     double currInt;
     for (int k = 0; k < nInt; k++) {
         currInt = 0.0;
         std::vector<double> vals = Utils::evalLagrangeInterp(k, evalPoints, gaussPoints);
-        for (int i = 0; i < nInt-1; i++) {
-            currInt += h[i]*(vals[2*i]+4*vals[2*i+1]+vals[2*i+2]);
+        for (int i = 0; i < evalPoints.size()-2; i+=2) {
+            currInt += h*(vals[i]+4*vals[i+1]+vals[i+2]);
         }
-        out[k] = currInt/3;
+        out.push_back(currInt/3);
     }
 
     return out;

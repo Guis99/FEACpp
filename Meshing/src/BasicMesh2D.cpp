@@ -1,8 +1,9 @@
 #include "..\include\BasicMesh2D.hpp"
 #include "..\..\Utils\include\LagrangeInterpolant.hpp"
 
+#include <iostream>
 
-Meshing::BasicMesh::Element::Element(int EID, std::vector<Node> Nodes, double Boundaries[4]) {
+Meshing::BasicMesh::Element::Element(int EID, std::vector<int> Nodes, double Boundaries[4]) {
     this->EID = EID;
     this->Nodes = Nodes;
     this->Boundaries;
@@ -31,16 +32,12 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     xOffsets[0] = xstart;
     yOffsets[0] = ystart;
 
-    double xacc = 0;
-    double yacc = 0;
     for (int i = 1; i < nElemX+1; i++) {
-        xacc += xdiv[i-1];
-        xOffsets[i] = xacc+xstart;
+        xOffsets[i] = xOffsets[i-1]+xdiv[i-1];
     }
 
     for (int i = 1; i < nElemY+1; i++) {
-        yacc += ydiv[i-1];
-        yOffsets[i] = yacc+ystart;
+        yOffsets[i] = yOffsets[i-1]+ydiv[i-1];
     }
 
     std::vector<double> xSpacing = Utils::genGaussPoints(xdeg);
@@ -66,7 +63,6 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
         for (int x = 0; x < widthX; x++) {
             xIndLocal++; NID++;
             double ax = xOffsets[xElemInd]; double bx = xOffsets[xElemInd+1];
-            std::array<double,2> pos;
 
             if (y==0 || y==widthY-1 || x==0 || x==widthX-1) {
                 nClass = 1;
@@ -75,6 +71,9 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
                 nClass = 0;
             }
 
+            std::array<double,2> pos;
+            pos[0] = transformPoint(xSpacing[xIndLocal+1],ax,bx);
+            pos[1] = transformPoint(ySpacing[yIndLocal+1],ay,by);
             Nodes.emplace_back(NID, pos, nClass);
             if (xIndLocal == xdeg-1) {
                 xElemInd++;
@@ -91,8 +90,14 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
         for (int i = 0; i < nElemX; i++) {
             EID++;
             double bounds[4] = {xOffsets[i],xOffsets[i+1],yOffsets[j],yOffsets[j+1]};
-            std::vector<Node> currNodes;
+            std::vector<int> currNodes;
             currNodes.reserve((xdeg+1)*(ydeg+1));
+
+            for (int yy = (i)*xdeg+1; yy < (i+1)*xdeg+2; yy++) {
+                for (int xx = (j)*ydeg+1; xx < (j+1)*ydeg+2; xx++) {
+                    currNodes.push_back((yy-1)*widthX+xx-1);
+                }
+            }
 
             Elements.emplace_back(EID, currNodes, bounds);
         }
@@ -110,3 +115,30 @@ std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::allNodePos()
 
     return out;
 }
+
+std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::posInElem(int ElemID) {
+    std::vector<std::array<double, 2>> out;
+    out.reserve((xdeg+1)*(ydeg+1));
+
+    for (const auto &node : Elements[ElemID].Nodes) {
+        std::cout<<Nodes[node].Position[0]<<", "<<Nodes[node].Position[1]<<std::endl;
+        out.push_back(Nodes[node].Position);
+    }
+
+    return out;
+}
+
+int Meshing::BasicMesh::BasicMesh2D::nNodes() {
+    return Nodes.size();
+}
+
+int Meshing::BasicMesh::BasicMesh2D::nElements() {
+    return Elements.size();
+}
+
+double Meshing::BasicMesh::BasicMesh2D::transformPoint(double x, double a, double b) {
+    double result = a + ((b - a) / 2.0) * (x + 1.0);
+    return result;
+}
+
+
