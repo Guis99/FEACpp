@@ -93,9 +93,9 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
             std::vector<int> currNodes;
             currNodes.reserve((xdeg+1)*(ydeg+1));
 
-            for (int yy = (i)*xdeg+1; yy < (i+1)*xdeg+2; yy++) {
-                for (int xx = (j)*ydeg+1; xx < (j+1)*ydeg+2; xx++) {
-                    currNodes.push_back((yy-1)*widthX+xx-1);
+            for (int yy = j*ydeg; yy < (j+1)*ydeg+1; yy++) {
+                for (int xx = i*xdeg; xx < (i+1)*xdeg+1; xx++) {
+                    currNodes.push_back(yy*widthX+xx);
                 }
             }
 
@@ -121,7 +121,6 @@ std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::posInElem(in
     out.reserve((xdeg+1)*(ydeg+1));
 
     for (const auto &node : Elements[ElemID].Nodes) {
-        std::cout<<Nodes[node].Position[0]<<", "<<Nodes[node].Position[1]<<std::endl;
         out.push_back(Nodes[node].Position);
     }
 
