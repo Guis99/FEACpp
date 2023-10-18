@@ -1,5 +1,8 @@
+#include "..\..\Utils\include\LagrangeInterpolant.hpp"
 #include <vector>
 #include <array>
+
+#pragma once
 
 namespace Meshing {
     namespace BasicMesh {
@@ -7,9 +10,11 @@ namespace Meshing {
             public:
                 int EID;
                 std::vector<int> Nodes;
-                double Boundaries[4];
+                std::vector<double> Boundaries;
 
-                Element(int EID, std::vector<int> Nodes, double Boundaries[4]);
+                Element(int EID, std::vector<int> Nodes, std::vector<double> Boundaries);
+                double getWidth();
+                double getHeight();
         };
 
         class Node {

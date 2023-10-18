@@ -3,6 +3,7 @@
 #include <vector>
 
 int main() {
+    std::cout<<"ayyyyy lmao"<<std::endl;
     int deg; double h;
     std::cout<<"order: ";
     std::cin>>deg;

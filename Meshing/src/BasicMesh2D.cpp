@@ -1,12 +1,19 @@
 #include "..\include\BasicMesh2D.hpp"
-#include "..\..\Utils\include\LagrangeInterpolant.hpp"
 
 #include <iostream>
 
-Meshing::BasicMesh::Element::Element(int EID, std::vector<int> Nodes, double Boundaries[4]) {
+Meshing::BasicMesh::Element::Element(int EID, std::vector<int> Nodes, std::vector<double> Boundaries) {
     this->EID = EID;
     this->Nodes = Nodes;
-    this->Boundaries;
+    this->Boundaries = Boundaries;
+}
+
+double Meshing::BasicMesh::Element::getWidth() {
+    return Boundaries[1] - Boundaries[0];
+}
+
+double Meshing::BasicMesh::Element::getHeight() {
+    return Boundaries[3] - Boundaries[2];
 }
 
 Meshing::BasicMesh::Node::Node(int NID, std::array<double, 2> Position, int nClass) {
@@ -89,7 +96,6 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     for (int j = 0; j < nElemY; j++) {
         for (int i = 0; i < nElemX; i++) {
             EID++;
-            double bounds[4] = {xOffsets[i],xOffsets[i+1],yOffsets[j],yOffsets[j+1]};
             std::vector<int> currNodes;
             currNodes.reserve((xdeg+1)*(ydeg+1));
 
@@ -98,7 +104,7 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
                     currNodes.push_back(yy*widthX+xx);
                 }
             }
-
+            std::vector<double> bounds = {xOffsets[i],xOffsets[i+1],yOffsets[j],yOffsets[j+1]};
             Elements.emplace_back(EID, currNodes, bounds);
         }
     }

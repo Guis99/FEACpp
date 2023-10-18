@@ -1,4 +1,5 @@
 #include "..\..\3PDep\eigen-3.4.0\Eigen\Eigen"
+#include "..\..\3PDep\eigen-3.4.0\unsupported\Eigen\KroneckerProduct"
 // #include "..\..\3PDep\eigen-3.4.0\Eigen\LU"
 // #include "..\..\3PDep\eigen-3.4.0\Eigen\Sparse"
 
@@ -59,15 +60,24 @@ int main() {
 
     // Test matrix data import
 
-    float data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16};
-    Eigen::Matrix<float,4,4> bigMat(data);
+    std::vector<double> data = {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16};
+    Eigen::Map<Eigen::MatrixXd> bigMat(data.data(), 4, 4);
 
-    for (int i=0;i<4;i++) {
-        for (int j=0;j<4;j++) {
-            std::cout<<bigMat(i,j)<<" ";
-        }
-        std::cout<<std::endl;
-    }
+    std::cout<<bigMat<<std::endl;
+
+    Eigen::MatrixXd idmat(5,5);
+    idmat.setIdentity();
+    std::cout<<idmat<<std::endl;
+
+    Eigen::MatrixXd kronMat(20,20);
+    kronMat << Eigen::kroneckerProduct(idmat, bigMat);
+    kronMat = kronMat.transpose()*kronMat;
+    kronMat.transpose();
+    std::cout<<kronMat<<std::endl;
 
     // std::cout<<data<<std::endl;
+    // test vector init
+    std::vector<double> vecdata = {1,2,3,4};
+    Eigen::VectorXd v1 = kronMat.diagonal(); 
+    std::cout<<v1<<std::endl;      
 }
