@@ -4,6 +4,21 @@
 
 using namespace Solvers;
 
+Eigen::MatrixXd MatrixAssembly::GenerateQuadWeights(std::vector<double> &gpX, std::vector<double> &gpY, int numXNodes, int numYNodes, int numElemNodes) {
+    // Generate quadrature weight matrices
+    // Get integrals of basis functions
+    std::vector<double> integX = Utils::integrateLagrange(gpX);
+    std::vector<double> integY = Utils::integrateLagrange(gpY);
+
+    Eigen::Map<Eigen::VectorXd> integXMat(integX.data(),numXNodes);
+    Eigen::Map<Eigen::VectorXd> integYMat(integY.data(),numYNodes);
+
+    Eigen::MatrixXd weightMat(numElemNodes, numElemNodes);
+    weightMat << Eigen::kroneckerProduct((Eigen::MatrixXd)integXMat.asDiagonal(),(Eigen::MatrixXd)integYMat.asDiagonal());
+
+    return weightMat;
+}
+
 Eigen::SparseMatrix<double> MatrixAssembly::MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
@@ -12,18 +27,8 @@ Eigen::SparseMatrix<double> MatrixAssembly::MassMatrix(Meshing::BasicMesh::Basic
     std::vector<double> gaussPointsX = Utils::genGaussPoints(xdeg);
     std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
 
-    // Generate quadrature weight matrices
-    // Get integrals of basis functions
-    std::vector<double> integX = Utils::integrateLagrange(gaussPointsX);
-    std::vector<double> integY = Utils::integrateLagrange(gaussPointsY);
-
-    // Copy data into matrix
-    Eigen::Map<Eigen::VectorXd> integXMat(integX.data(),numXNodes);
-    Eigen::Map<Eigen::VectorXd> integYMat(integY.data(),numYNodes); 
-
-    // get elem. matrix
-    Eigen::MatrixXd weightMat(numElemNodes, numElemNodes);
-    weightMat << Eigen::kroneckerProduct((Eigen::MatrixXd)integXMat.asDiagonal(),(Eigen::MatrixXd)integYMat.asDiagonal());
+    // get base elem matrix
+    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
     weightMat *= c;
 
     // Turn to vector because matrix is diagonal
@@ -61,7 +66,6 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
     std::vector<double> gaussPointsX = Utils::genGaussPoints(xdeg);
     std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
 
-
     // Generate derivative matrices
     std::vector<double> AxInitializer; std::vector<double> AyInitializer;
     AxInitializer.reserve(numXNodes*numXNodes); AyInitializer.reserve(numYNodes*numYNodes);
@@ -86,20 +90,9 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
     Eigen::Map<Eigen::MatrixXd> Ax(AxInitializer.data(), numXNodes, numXNodes); 
     Eigen::Map<Eigen::MatrixXd> Ay(AyInitializer.data(), numYNodes, numYNodes);
 
-    std::cout<<Ax<<std::endl;
-
     // Generate quadrature weight matrices
-    // Get integrals of basis functions
-    std::vector<double> integX = Utils::integrateLagrange(gaussPointsX);
-    std::vector<double> integY = Utils::integrateLagrange(gaussPointsY);
+    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
 
-    Eigen::Map<Eigen::VectorXd> integXMat(integX.data(),numXNodes);
-    Eigen::Map<Eigen::VectorXd> integYMat(integY.data(),numYNodes);
-
-    Eigen::MatrixXd weightMat(numElemNodes, numElemNodes);
-    weightMat << Eigen::kroneckerProduct((Eigen::MatrixXd)(integXMat.asDiagonal()),(Eigen::MatrixXd)(integYMat.asDiagonal()));
-
-    std::cout<<weightMat<<std::endl;
     // Generate mass matrices
     Eigen::MatrixXd Bx; Bx.setIdentity(numXNodes, numXNodes);
     Eigen::MatrixXd By; By.setIdentity(numYNodes, numYNodes);
@@ -142,7 +135,7 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
 }
 
 Eigen::SparseMatrix<double> MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, double f) {
-        int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
+    int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
     int numElemNodes = numXNodes * numYNodes;
     int nNodes = inputMesh.nNodes(); int nElements = inputMesh.nElements();
@@ -150,16 +143,9 @@ Eigen::SparseMatrix<double> MatrixAssembly::AssembleFVec(Meshing::BasicMesh::Bas
     std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
 
     // Generate quadrature weight matrices
-    // Get integrals of basis functions
-    std::vector<double> integX = Utils::integrateLagrange(gaussPointsX);
-    std::vector<double> integY = Utils::integrateLagrange(gaussPointsY);
+    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
 
-    Eigen::Map<Eigen::VectorXd> integXMat(integX.data(),numXNodes);
-    Eigen::Map<Eigen::VectorXd> integYMat(integY.data(),numYNodes);
-
-    Eigen::MatrixXd weightMat(numElemNodes, numElemNodes);
-    weightMat << Eigen::kroneckerProduct((Eigen::MatrixXd)integXMat.asDiagonal(),(Eigen::MatrixXd)integYMat.asDiagonal());
-
+    // Turn weight mat int vector and mult. by source since diagonal
     Eigen::VectorXd sourceVec = f * weightMat.diagonal();
 
     // Initialize i,j,v triplet list for sparse matrix
