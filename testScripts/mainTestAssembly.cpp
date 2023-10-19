@@ -21,7 +21,7 @@ int main() {
         ydivs.push_back(2);
     }
 
-    int xdeg = 3; int ydeg = 3;
+    int xdeg = 20; int ydeg = 3;
 
     int widthX = nxElem*xdeg+1;
     int widthY = nyElem*ydeg+1;
@@ -31,7 +31,6 @@ int main() {
     Eigen::SparseMatrix K = Solvers::MatrixAssembly::StiffnessMatrix(mesh, 2);
     Eigen::SparseMatrix M = Solvers::MatrixAssembly::MassMatrix(mesh,2);
     Eigen::SparseMatrix F = Solvers::MatrixAssembly::AssembleFVec(mesh, 2);
-    // int M=0;int F=0;
 
     std::cout<<K<<std::endl<<M<<std::endl<<F<<std::endl;
 }

@@ -133,6 +133,36 @@ std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::posInElem(in
     return out;
 }
 
+std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::posOfNodes(std::vector<int> NodeIds) {
+    std::vector<std::array<double, 2>> out;
+    out.reserve(NodeIds.size());
+
+    for (const auto nodeID : NodeIds) {
+        out.push_back(Nodes[nodeID].Position);
+    }
+
+    return out;
+}
+
+std::vector<int> Meshing::BasicMesh::BasicMesh2D::getBoundaryNodes() {
+    int numXElems = xOffsets.size();
+    int numYElems = yOffsets.size();
+    int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
+    int numBoundaryNodes = 2*xWidth + 2*yWidth;
+    std::vector<int> boundaryNodes; boundaryNodes.reserve(numBoundaryNodes);
+    
+    for (int i=0; i<xWidth; i++) {
+        boundaryNodes[i] = i;
+        boundaryNodes[i+xWidth+yWidth] = this->nNodes() - i - 1;
+    }
+
+    for (int i=0; i<yWidth; i++) {
+        boundaryNodes[i+xWidth] = i*(xWidth+1)+xWidth;
+        boundaryNodes[i+2*xWidth+yWidth] = (yWidth-i)*(xWidth+1);
+    }
+}
+
+
 int Meshing::BasicMesh::BasicMesh2D::nNodes() {
     return Nodes.size();
 }

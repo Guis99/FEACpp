@@ -2,7 +2,8 @@
 #include <vector>
 #include <array>
 
-#pragma once
+#ifndef MESH_RECT_2D
+#define MESH_RECT_2D
 
 namespace Meshing {
     namespace BasicMesh {
@@ -44,9 +45,12 @@ namespace Meshing {
 
                 std::vector<std::array<double, 2>> allNodePos();
                 std::vector<std::array<double, 2>> posInElem(int ElemID);
+                std::vector<std::array<double, 2>> posOfNodes(std::vector<int> NodeIds);
                 int nNodes();
                 int nElements();
                 static double transformPoint(double x, double a, double b);
         };
     }
 }
+
+#endif 

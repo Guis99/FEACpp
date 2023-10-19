@@ -4,22 +4,26 @@
 
 using namespace Solvers;
 
-Eigen::MatrixXd MatrixAssembly::GenerateQuadWeights(std::vector<double> &gpX, std::vector<double> &gpY, int numXNodes, int numYNodes, int numElemNodes) {
+// typedef Eigen::SparseMatrix<double> SpD;
+// typedef Eigen::MatrixXd DD;
+// typedef Eigen::VectorXd DvD;
+
+DD MatrixAssembly::GenerateQuadWeights(std::vector<double> &gpX, std::vector<double> &gpY, int numXNodes, int numYNodes, int numElemNodes) {
     // Generate quadrature weight matrices
     // Get integrals of basis functions
     std::vector<double> integX = Utils::integrateLagrange(gpX);
     std::vector<double> integY = Utils::integrateLagrange(gpY);
 
-    Eigen::Map<Eigen::VectorXd> integXMat(integX.data(),numXNodes);
-    Eigen::Map<Eigen::VectorXd> integYMat(integY.data(),numYNodes);
+    Eigen::Map<DvD> integXMat(integX.data(),numXNodes);
+    Eigen::Map<DvD> integYMat(integY.data(),numYNodes);
 
-    Eigen::MatrixXd weightMat(numElemNodes, numElemNodes);
-    weightMat << Eigen::kroneckerProduct((Eigen::MatrixXd)integXMat.asDiagonal(),(Eigen::MatrixXd)integYMat.asDiagonal());
+    DD weightMat(numElemNodes, numElemNodes);
+    weightMat << Eigen::kroneckerProduct((DD)integXMat.asDiagonal(),(DD)integYMat.asDiagonal());
 
     return weightMat;
 }
 
-Eigen::SparseMatrix<double> MatrixAssembly::MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c) {
+SpD MatrixAssembly::MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
     int numElemNodes = numXNodes * numYNodes;
@@ -28,18 +32,18 @@ Eigen::SparseMatrix<double> MatrixAssembly::MassMatrix(Meshing::BasicMesh::Basic
     std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
 
     // get base elem matrix
-    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
+    DD weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
     weightMat *= c;
 
     // Turn to vector because matrix is diagonal
-    Eigen::VectorXd weightVector = weightMat.diagonal();
+    DvD weightVector = weightMat.diagonal();
 
     // Initialize i,j,v triplet list for sparse matrix
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(nElements * numElemNodes * numElemNodes);
 
     // Integrate over all elements
-    Eigen::VectorXd localElemMat(numElemNodes);
+    DvD localElemMat(numElemNodes);
     for (auto &elm : inputMesh.Elements) {
         double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
         // calculate local matrix
@@ -53,12 +57,12 @@ Eigen::SparseMatrix<double> MatrixAssembly::MassMatrix(Meshing::BasicMesh::Basic
     }
 
     // Declare and construct sparse matrix from triplets
-    Eigen::SparseMatrix<double> mat(nNodes,nNodes);
+    SpD mat(nNodes,nNodes);
     mat.setFromTriplets(tripletList.begin(), tripletList.end());
     return mat;
 }
 
-Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double k) {
+SpD MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double k) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
     int numElemNodes = numXNodes * numYNodes;
@@ -87,23 +91,23 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
     }
 
     // map derivative values to matrix
-    Eigen::Map<Eigen::MatrixXd> Ax(AxInitializer.data(), numXNodes, numXNodes); 
-    Eigen::Map<Eigen::MatrixXd> Ay(AyInitializer.data(), numYNodes, numYNodes);
+    Eigen::Map<DD> Ax(AxInitializer.data(), numXNodes, numXNodes); 
+    Eigen::Map<DD> Ay(AyInitializer.data(), numYNodes, numYNodes);
 
     // Generate quadrature weight matrices
-    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
+    DD weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
 
     // Generate mass matrices
-    Eigen::MatrixXd Bx; Bx.setIdentity(numXNodes, numXNodes);
-    Eigen::MatrixXd By; By.setIdentity(numYNodes, numYNodes);
+    DD Bx; Bx.setIdentity(numXNodes, numXNodes);
+    DD By; By.setIdentity(numYNodes, numYNodes);
 
-    Eigen::MatrixXd coeffMat(numElemNodes, numElemNodes);
+    DD coeffMat(numElemNodes, numElemNodes);
     coeffMat.setIdentity(); coeffMat *= k;
     
     // Get element-wise matrix intermediates
-    Eigen::MatrixXd combinedX(numElemNodes, numElemNodes);
+    DD combinedX(numElemNodes, numElemNodes);
     combinedX << Eigen::kroneckerProduct(By, Ax);
-    Eigen::MatrixXd combinedY(numElemNodes, numElemNodes);
+    DD combinedY(numElemNodes, numElemNodes);
     combinedY << Eigen::kroneckerProduct(Ay, Bx);
 
     // Initialize i,j,v triplet list for sparse matrix
@@ -111,7 +115,7 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
     tripletList.reserve(nElements * numElemNodes * numElemNodes);
 
     // Integrate over all elements
-    Eigen::MatrixXd localElemMat(numElemNodes, numElemNodes);
+    DD localElemMat(numElemNodes, numElemNodes);
     for (auto &elm : inputMesh.Elements) {
         double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
         // calculate local matrix
@@ -129,12 +133,12 @@ Eigen::SparseMatrix<double> MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::
     }
 
     // Declare and construct sparse matrix from triplets
-    Eigen::SparseMatrix<double> mat(nNodes,nNodes);
+    SpD mat(nNodes,nNodes);
     mat.setFromTriplets(tripletList.begin(), tripletList.end());
     return mat;
 }
 
-Eigen::SparseMatrix<double> MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, double f) {
+SpD MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, double f) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
     int numElemNodes = numXNodes * numYNodes;
@@ -143,17 +147,17 @@ Eigen::SparseMatrix<double> MatrixAssembly::AssembleFVec(Meshing::BasicMesh::Bas
     std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
 
     // Generate quadrature weight matrices
-    Eigen::MatrixXd weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
+    DD weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
 
     // Turn weight mat int vector and mult. by source since diagonal
-    Eigen::VectorXd sourceVec = f * weightMat.diagonal();
+    DvD sourceVec = f * weightMat.diagonal();
 
     // Initialize i,j,v triplet list for sparse matrix
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(nElements * numElemNodes * numElemNodes);
 
     // Integrate over all elements
-    Eigen::VectorXd localElemMat(numElemNodes);
+    DvD localElemMat(numElemNodes);
     for (auto &elm : inputMesh.Elements) {
         double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
         // calculate local matrix
@@ -167,7 +171,64 @@ Eigen::SparseMatrix<double> MatrixAssembly::AssembleFVec(Meshing::BasicMesh::Bas
     }
 
     // Declare and construct sparse matrix from triplets
-    Eigen::SparseMatrix<double> mat(nNodes,1);
+    SpD mat(nNodes,1);
     mat.setFromTriplets(tripletList.begin(), tripletList.end());
     return mat;
+}
+
+SpD MatrixAssembly::GetNullSpace(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, bool nullSpace) {
+    int nNodes = inputMesh.nNodes();
+    int nNonZeroes;
+
+    if (nullSpace) {
+        nNonZeroes = boundaryNodes.size();
+        }
+    else {
+        nNonZeroes = nNodes - boundaryNodes.size();
+        }
+    
+    SpD nullSpaceMat(nNodes, nNonZeroes);
+
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(nNonZeroes);
+
+    for (int i=0; i<nNonZeroes; i++) {
+        tripletList.emplace_back(inputMesh.Nodes[i], i, 1.0);
+    }
+
+    return nullSpaceMat;
+}
+
+DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, DvD (*DirichletBcs[4]) (std::vector<std::array<double, 2>>&)) {
+    int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
+    int numXElems = inputMesh.xOffsets.size(); int numYElems = inputMesh.yOffsets.size();
+    int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
+    
+    int numBoundaryNodes = boundaryNodes.size();
+
+    std::vector<std::array<double,2>> boundaryNodePos = inputMesh.posOfNodes(boundaryNodes);
+
+    std::vector<double> boundaryNodeValues;
+    boundaryNodeValues.reserve(numBoundaryNodes);
+
+    for (int i=0; i<4; i++) {
+        auto currFunc = *(DirichletBcs[i]);
+    }
+
+    Eigen::Map<DvD> boundaryNodeValuesVec(boundaryNodeValues.data(), numBoundaryNodes, 1);
+    return (DvD)boundaryNodeValuesVec;
+}
+
+DvD MatrixAssembly::ApplyBoundaryCond(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals) {
+    // TODO: Make sure boundary nodes are properly rearranged again
+    SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+    SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
+    SpD F11 = columnSpace.transpose() * fVec;
+    SpD F21 = nullSpace.transpose() * fVec;
+
+    // TODO: find proper sparse solving workflow
+    DvD x;
+    x = columnSpace * x;
+    x += boundaryVals;
+    return x;
 }
