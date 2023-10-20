@@ -176,59 +176,87 @@ SpD MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, dou
     return mat;
 }
 
-SpD MatrixAssembly::GetNullSpace(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, bool nullSpace) {
+SpD MatrixAssembly::GetNullSpace(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &nodesToAdd, bool nullSpace) {
     int nNodes = inputMesh.nNodes();
     int nNonZeroes;
 
     if (nullSpace) {
-        nNonZeroes = boundaryNodes.size();
+        nNonZeroes = nodesToAdd.size();
+        std::sort(nodesToAdd.begin(), nodesToAdd.end());
         }
     else {
-        nNonZeroes = nNodes - boundaryNodes.size();
+        nNonZeroes = nodesToAdd.size();
         }
-    
-    SpD nullSpaceMat(nNodes, nNonZeroes);
 
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(nNonZeroes);
 
     for (int i=0; i<nNonZeroes; i++) {
-        tripletList.emplace_back(inputMesh.Nodes[i], i, 1.0);
+        tripletList.emplace_back(nodesToAdd[i], i, 1.0);
     }
-
+    
+    SpD nullSpaceMat(nNodes, nNonZeroes);
+    nullSpaceMat.setFromTriplets(tripletList.begin(), tripletList.end());
     return nullSpaceMat;
 }
 
-DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, DvD (*DirichletBcs[4]) (std::vector<std::array<double, 2>>&)) {
+DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, std::vector<bcFunc> DirichletBcs) {
+    // See typedef for declaration of bcFunc
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
-    int numXElems = inputMesh.xOffsets.size(); int numYElems = inputMesh.yOffsets.size();
+    int numXElems = inputMesh.xOffsets.size()-1; int numYElems = inputMesh.yOffsets.size()-1;
     int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
     
     int numBoundaryNodes = boundaryNodes.size();
 
     std::vector<std::array<double,2>> boundaryNodePos = inputMesh.posOfNodes(boundaryNodes);
 
-    std::vector<double> boundaryNodeValues;
+    // Boundary nodes are given in clockwise order so we must rearrange
+    std::vector<double> boundaryNodeValues; 
+    std::vector<double> boundaryNodeValsRearranged; 
     boundaryNodeValues.reserve(numBoundaryNodes);
+    boundaryNodeValsRearranged.reserve(numBoundaryNodes);
+
+    std::vector<double> boundaryCalc;
+    std::array<double,2> *currPointer = boundaryNodePos.data();
+    auto *currNodeValPointer = boundaryNodeValues.data();
+    int ptrIncr;
 
     for (int i=0; i<4; i++) {
-        auto currFunc = *(DirichletBcs[i]);
+        // Alternate between x and y-iteration
+        ptrIncr = i % 2 == 0 ? xWidth : yWidth;
+        // Take bcFunc and evaluate it
+        boundaryCalc = (*(DirichletBcs[i])) (currPointer,currPointer+ptrIncr,ptrIncr);
+        std::copy(boundaryCalc.begin(), boundaryCalc.end(), currNodeValPointer); 
+        currPointer += ptrIncr; currNodeValPointer += ptrIncr;
     }
 
-    Eigen::Map<DvD> boundaryNodeValuesVec(boundaryNodeValues.data(), numBoundaryNodes, 1);
+    for (auto i : boundaryNodeValues) {
+        std::cout<<i<<std::endl;
+    }
+
+    std::sort(boundaryNodes.begin(), boundaryNodes.end());
+    std::cout<<"here1"<<std::endl;
+    for (int i=0; i<numBoundaryNodes; i++) {
+        // boundaryNodeValsRearranged[i] = boundaryNodeValues[boundaryNodes[i]];
+        boundaryNodeValsRearranged[i] = boundaryNodeValues[i];
+
+        std::cout<<"here2"<<std::endl;
+    }
+
+    Eigen::Map<DvD> boundaryNodeValuesVec(boundaryNodeValsRearranged.data(), numBoundaryNodes, 1);
+    std::cout<<"here3"<<std::endl;
     return (DvD)boundaryNodeValuesVec;
 }
 
-DvD MatrixAssembly::ApplyBoundaryCond(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals) {
-    // TODO: Make sure boundary nodes are properly rearranged again
-    SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
-    SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
-    SpD F11 = columnSpace.transpose() * fVec;
-    SpD F21 = nullSpace.transpose() * fVec;
+// DvD MatrixAssembly::ComputeSolution(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals) {
+//     SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+//     SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
+//     SpD F11 = columnSpace.transpose() * fVec;
 
-    // TODO: find proper sparse solving workflow
-    DvD x;
-    x = columnSpace * x;
-    x += boundaryVals;
-    return x;
-}
+//     Eigen::ConjugateGradient<SpD, Eigen::Lower> cgSolver;
+//     cgSolver.compute(A11);
+
+//     DvD x = cgSolver.solve(F11 - A12 * boundaryVals);
+//     x = columnSpace * x + nullSpace * boundaryVals;
+//     return x;
+// }

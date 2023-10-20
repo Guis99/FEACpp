@@ -46,6 +46,8 @@ namespace Meshing {
                 std::vector<std::array<double, 2>> allNodePos();
                 std::vector<std::array<double, 2>> posInElem(int ElemID);
                 std::vector<std::array<double, 2>> posOfNodes(std::vector<int> NodeIds);
+                std::vector<int> getBoundaryNodes();
+                std::vector<int> getFreeNodes();
                 int nNodes();
                 int nElements();
                 static double transformPoint(double x, double a, double b);

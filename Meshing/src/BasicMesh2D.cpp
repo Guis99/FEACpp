@@ -33,11 +33,13 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     int nElemX = xdiv.size();
     int nElemY = ydiv.size();
 
-    xOffsets.reserve(nElemX+1);
-    yOffsets.reserve(nElemY+1);
+    xOffsets.resize(nElemX+1);
+    yOffsets.resize(nElemY+1);
 
     xOffsets[0] = xstart;
     yOffsets[0] = ystart;
+
+    std::cout<<xOffsets[0]<<", "<<xstart<<", "<<yOffsets[0]<<", "<<ystart<<std::endl;
 
     for (int i = 1; i < nElemX+1; i++) {
         xOffsets[i] = xOffsets[i-1]+xdiv[i-1];
@@ -46,6 +48,17 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     for (int i = 1; i < nElemY+1; i++) {
         yOffsets[i] = yOffsets[i-1]+ydiv[i-1];
     }
+
+    for (int i=0; i<nElemX+1; i++) {
+        std::cout<<xOffsets[i]<<" ";
+    }
+    std::cout<<std::endl;
+    for (int i=0; i<nElemY+1; i++) {
+        std::cout<<yOffsets[i]<<" ";
+    }
+
+    std::cout<<std::endl;
+
 
     std::vector<double> xSpacing = Utils::genGaussPoints(xdeg);
     std::vector<double> ySpacing = Utils::genGaussPoints(ydeg);
@@ -145,23 +158,43 @@ std::vector<std::array<double, 2>> Meshing::BasicMesh::BasicMesh2D::posOfNodes(s
 }
 
 std::vector<int> Meshing::BasicMesh::BasicMesh2D::getBoundaryNodes() {
-    int numXElems = xOffsets.size();
-    int numYElems = yOffsets.size();
+    int numXElems = xOffsets.size()-1;
+    int numYElems = yOffsets.size()-1;
     int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
+
     int numBoundaryNodes = 2*xWidth + 2*yWidth;
-    std::vector<int> boundaryNodes; boundaryNodes.reserve(numBoundaryNodes);
-    
+    std::cout<<numBoundaryNodes<<std::endl;
+    std::vector<int> boundaryNodes(numBoundaryNodes,0);
+
     for (int i=0; i<xWidth; i++) {
         boundaryNodes[i] = i;
-        boundaryNodes[i+xWidth+yWidth] = this->nNodes() - i - 1;
+        boundaryNodes[i+xWidth+yWidth] = this->nNodes() - xWidth + i;
     }
 
     for (int i=0; i<yWidth; i++) {
         boundaryNodes[i+xWidth] = i*(xWidth+1)+xWidth;
-        boundaryNodes[i+2*xWidth+yWidth] = (yWidth-i)*(xWidth+1);
+        boundaryNodes[i+2*xWidth+yWidth] = (i+1)*(xWidth+1);
     }
+
+    return boundaryNodes;
 }
 
+std::vector<int> Meshing::BasicMesh::BasicMesh2D::getFreeNodes() {
+    int numXElems = xOffsets.size();
+    int numYElems = yOffsets.size();
+    int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
+
+    int numBoundaryNodes = 2*xWidth + 2*yWidth;
+    std::vector<int> freeNodes; freeNodes.reserve(nNodes() - numBoundaryNodes);
+
+    for (auto &node : Nodes) {
+        if (node.nClass == 0) {
+            freeNodes.push_back(node.NID);
+        }
+    }
+
+    return freeNodes;
+}
 
 int Meshing::BasicMesh::BasicMesh2D::nNodes() {
     return Nodes.size();
