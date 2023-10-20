@@ -17,6 +17,13 @@ typedef std::vector<double> (*bcFunc) (std::array<double,2>*,std::array<double,2
 namespace Solvers {
     namespace MatrixAssembly {
         DD GenerateQuadWeights(std::vector<double> &gpX, std::vector<double> &gpY, int numXNodes, int numYNodes, int numElemNodes);
+        void AssembleMatrices(Meshing::BasicMesh::BasicMesh2D &inputMesh,
+                    SpD &MassMatrix,
+                    SpD &StiffnessMatrix,
+                    SpD &SourceVector,
+                    double c,
+                    double k,
+                    double f);
         SpD MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c);
         SpD StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double k);
         SpD AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, double f);

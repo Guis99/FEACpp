@@ -23,6 +23,101 @@ DD MatrixAssembly::GenerateQuadWeights(std::vector<double> &gpX, std::vector<dou
     return weightMat;
 }
 
+void MatrixAssembly::AssembleMatrices(Meshing::BasicMesh::BasicMesh2D &inputMesh,
+                    SpD &MassMatrix,
+                    SpD &StiffnessMatrix,
+                    SpD &SourceVector,
+                    double c,
+                    double k,
+                    double f) {
+
+    int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
+    int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
+    int numElemNodes = numXNodes * numYNodes;
+    int nNodes = inputMesh.nNodes(); int nElements = inputMesh.nElements();
+    std::vector<double> gaussPointsX = Utils::genGaussPoints(xdeg);
+    std::vector<double> gaussPointsY = Utils::genGaussPoints(ydeg);
+
+    // Generate derivative matrices
+    std::vector<double> AxInitializer; std::vector<double> AyInitializer;
+    AxInitializer.reserve(numXNodes*numXNodes); AyInitializer.reserve(numYNodes*numYNodes);
+
+    double *AxInitIdx = AxInitializer.data(); 
+    double *AyInitIdx = AyInitializer.data(); 
+
+    // Generate derivatives for each basis function, copy to full array
+    for (int k=0; k<numXNodes; k++) { 
+        std::vector<double> xPartials = Utils::numDeriv(.00001, k, gaussPointsX, gaussPointsX);
+        std::copy(xPartials.begin(), xPartials.end(), AxInitIdx);
+        AxInitIdx += numXNodes;
+    }
+    
+    for (int k=0; k<numYNodes; k++) {
+        std::vector<double> yPartials = Utils::numDeriv(.00001, k, gaussPointsY, gaussPointsY);
+        std::copy(yPartials.begin(), yPartials.end(), AyInitIdx);
+        AyInitIdx += numYNodes;
+    }
+
+    // map derivative values to matrix
+    Eigen::Map<DD> Ax(AxInitializer.data(), numXNodes, numXNodes); 
+    Eigen::Map<DD> Ay(AyInitializer.data(), numYNodes, numYNodes);
+
+    // Generate quadrature weight matrices
+    DD weightMat = MatrixAssembly::GenerateQuadWeights(gaussPointsX, gaussPointsY, numXNodes, numYNodes, numElemNodes);
+
+    // Generate mass matrices
+    DD Bx; Bx.setIdentity(numXNodes, numXNodes);
+    DD By; By.setIdentity(numYNodes, numYNodes);
+    
+    // Get element-wise matrix intermediates
+    DD combinedX(numElemNodes, numElemNodes);
+    combinedX << Eigen::kroneckerProduct(By, Ax);
+    DD combinedY(numElemNodes, numElemNodes);
+    combinedY << Eigen::kroneckerProduct(Ay, Bx);
+
+    // Initialize i,j,v triplet list for sparse matrix
+    std::vector<Eigen::Triplet<double>> tripletListM;
+    std::vector<Eigen::Triplet<double>> tripletListK;
+    std::vector<Eigen::Triplet<double>> tripletListF;
+    tripletListM.reserve(nElements * numElemNodes * numElemNodes);
+    tripletListK.reserve(nElements * numElemNodes * numElemNodes);
+    tripletListF.reserve(nElements * numElemNodes);
+
+    
+    DD coeffMat(numElemNodes, numElemNodes);
+    coeffMat.setIdentity(); coeffMat *= k;
+    DvD massVec = c * weightMat.diagonal();
+    DvD sourceVec = f * weightMat.diagonal();
+    DvD localElemVecMass(numElemNodes);
+    DD localElemMatK(numElemNodes, numElemNodes);
+    DvD localElemVecSource(numElemNodes);
+    // Integrate over all elements
+    for (auto &elm : inputMesh.Elements) {
+        double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
+        // calculate local matrix
+        localElemVecMass = massVec*Lx*Ly/4;
+        localElemVecSource = sourceVec*Lx*Ly/4;
+        localElemMatK = combinedX*coeffMat*weightMat*combinedX.transpose()*Ly/Lx +
+                        combinedY*coeffMat*weightMat*combinedY.transpose()*Lx/Ly;
+        
+        // Get nodes in element
+        std::vector<int> nodesInElm = elm.Nodes;
+        // Generate i,j,v triplets
+        for (int j=0; j<numElemNodes; j++) {
+            tripletListM.emplace_back(nodesInElm[j], nodesInElm[j], localElemVecMass(j));
+            tripletListF.emplace_back(nodesInElm[j], 0, localElemVecSource(j));
+            for (int i=0; i<numElemNodes; i++) {
+                tripletListK.emplace_back(nodesInElm[i],nodesInElm[j],localElemMatK(i,j));
+            }
+        }
+    }
+
+    // Declare and construct sparse matrix from triplets
+    MassMatrix.setFromTriplets(tripletListM.begin(), tripletListM.end());
+    StiffnessMatrix.setFromTriplets(tripletListK.begin(), tripletListK.end());
+    SourceVector.setFromTriplets(tripletListF.begin(), tripletListF.end());
+}
+
 SpD MatrixAssembly::MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXNodes = xdeg + 1; int numYNodes = ydeg + 1;
@@ -154,7 +249,7 @@ SpD MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, dou
 
     // Initialize i,j,v triplet list for sparse matrix
     std::vector<Eigen::Triplet<double>> tripletList;
-    tripletList.reserve(nElements * numElemNodes * numElemNodes);
+    tripletList.reserve(nElements * numElemNodes);
 
     // Integrate over all elements
     DvD localElemMat(numElemNodes);
@@ -230,33 +325,24 @@ DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh,
         currPointer += ptrIncr; currNodeValPointer += ptrIncr;
     }
 
-    for (auto i : boundaryNodeValues) {
-        std::cout<<i<<std::endl;
-    }
-
-    std::sort(boundaryNodes.begin(), boundaryNodes.end());
-    std::cout<<"here1"<<std::endl;
     for (int i=0; i<numBoundaryNodes; i++) {
         // boundaryNodeValsRearranged[i] = boundaryNodeValues[boundaryNodes[i]];
         boundaryNodeValsRearranged[i] = boundaryNodeValues[i];
-
-        std::cout<<"here2"<<std::endl;
     }
 
     Eigen::Map<DvD> boundaryNodeValuesVec(boundaryNodeValsRearranged.data(), numBoundaryNodes, 1);
-    std::cout<<"here3"<<std::endl;
     return (DvD)boundaryNodeValuesVec;
 }
 
-// DvD MatrixAssembly::ComputeSolution(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals) {
-//     SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
-//     SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
-//     SpD F11 = columnSpace.transpose() * fVec;
+DvD MatrixAssembly::ComputeSolution(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals) {
+    SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+    SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
+    SpD F11 = columnSpace.transpose() * fVec;
 
-//     Eigen::ConjugateGradient<SpD, Eigen::Lower> cgSolver;
-//     cgSolver.compute(A11);
+    Eigen::ConjugateGradient<SpD, Eigen::Lower> cgSolver;
+    cgSolver.compute(A11);
 
-//     DvD x = cgSolver.solve(F11 - A12 * boundaryVals);
-//     x = columnSpace * x + nullSpace * boundaryVals;
-//     return x;
-// }
+    DvD x = cgSolver.solve(F11 - A12 * boundaryVals);
+    x = columnSpace * x + nullSpace * boundaryVals;
+    return x;
+}

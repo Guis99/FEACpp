@@ -39,8 +39,6 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     xOffsets[0] = xstart;
     yOffsets[0] = ystart;
 
-    std::cout<<xOffsets[0]<<", "<<xstart<<", "<<yOffsets[0]<<", "<<ystart<<std::endl;
-
     for (int i = 1; i < nElemX+1; i++) {
         xOffsets[i] = xOffsets[i-1]+xdiv[i-1];
     }
@@ -48,17 +46,6 @@ Meshing::BasicMesh::BasicMesh2D::BasicMesh2D(int xdeg, int ydeg,
     for (int i = 1; i < nElemY+1; i++) {
         yOffsets[i] = yOffsets[i-1]+ydiv[i-1];
     }
-
-    for (int i=0; i<nElemX+1; i++) {
-        std::cout<<xOffsets[i]<<" ";
-    }
-    std::cout<<std::endl;
-    for (int i=0; i<nElemY+1; i++) {
-        std::cout<<yOffsets[i]<<" ";
-    }
-
-    std::cout<<std::endl;
-
 
     std::vector<double> xSpacing = Utils::genGaussPoints(xdeg);
     std::vector<double> ySpacing = Utils::genGaussPoints(ydeg);
@@ -163,7 +150,6 @@ std::vector<int> Meshing::BasicMesh::BasicMesh2D::getBoundaryNodes() {
     int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
 
     int numBoundaryNodes = 2*xWidth + 2*yWidth;
-    std::cout<<numBoundaryNodes<<std::endl;
     std::vector<int> boundaryNodes(numBoundaryNodes,0);
 
     for (int i=0; i<xWidth; i++) {
@@ -208,5 +194,3 @@ double Meshing::BasicMesh::BasicMesh2D::transformPoint(double x, double a, doubl
     double result = a + ((b - a) / 2.0) * (x + 1.0);
     return result;
 }
-
-
