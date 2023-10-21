@@ -12,7 +12,7 @@ std::vector<double> bc1(std::array<double,2>* startpoint, std::array<double,2>* 
         auto pushvar = *(startpoint+i);
         double x = pushvar[0]; double y = pushvar[1];
         std::cout<<x<<", "<<y<<std::endl;
-        out.push_back(-x*(x-4));
+        out.push_back(-x*(x-4) - y*(y-4));
     }
 
     return out;
@@ -20,18 +20,18 @@ std::vector<double> bc1(std::array<double,2>* startpoint, std::array<double,2>* 
 
 int main() {
     std::vector<double> xdivs;
-    int nxElem = 2;
+    int nxElem = 10;
     xdivs.reserve(nxElem);
     for (int i = 0; i < nxElem; i++) {
-        xdivs.push_back(2);
+        xdivs.push_back(4.0/nxElem);
     }
 
     std::vector<double> ydivs;
-    int nyElem = 2;
+    int nyElem = 10;
     ydivs.reserve(nyElem);
 
     for (int i = 0; i < nyElem; i++) {
-        ydivs.push_back(2);
+        ydivs.push_back(4.0/nyElem);
     }
 
     int xdeg = 2; int ydeg = 2;
