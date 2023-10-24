@@ -89,3 +89,32 @@ std::vector<double> Utils::integrateLagrange(std::vector<double> &gaussPoints) {
 
     return out;
 }
+
+std::vector<double> Utils::ReshuffleNodeVals(std::vector<int> RmOrder, std::vector<int> CwOrder, std::vector<double> shuffleArray) {
+    int numObjs = CwOrder.size();
+    std::vector<int> shuffledIdxs;
+    shuffledIdxs.reserve(numObjs);
+    for (int i=0; i<numObjs; i++) {
+        int elmToMove = CwOrder[i];
+        int lb = 0; int ub = numObjs - 1;
+        int mid = (lb+ub)/2;
+        while (elmToMove != RmOrder[mid]) {
+            mid = (lb+ub)/2;
+            if (RmOrder[mid] > elmToMove) {
+                ub = mid;
+            }
+            else {
+                lb = mid+1;
+            }
+        }
+        shuffledIdxs.push_back(mid);
+    }
+
+    std::vector<double> out;
+    out.resize(numObjs);
+    for (int i=0; i<numObjs; i++) {
+        out[shuffledIdxs[i]] = shuffleArray[i];
+    }
+
+    return out;
+}

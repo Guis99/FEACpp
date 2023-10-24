@@ -4,7 +4,36 @@
 #include <iostream>
 #include <vector>
 
-std::vector<double> bc1(std::array<double,2>* startpoint, std::array<double,2>* endpoint, int allocSize) {
+std::vector<double> ReshuffleNodeVals(std::vector<int> RmOrder, std::vector<int> CwOrder, std::vector<double> shuffleArray) {
+    int numObjs = CwOrder.size();
+    std::vector<int> shuffledIdxs;
+    shuffledIdxs.reserve(numObjs);
+    for (int i=0; i<numObjs; i++) {
+        int elmToMove = CwOrder[i];
+        int lb = 0; int ub = numObjs - 1;
+        int mid = (lb+ub)/2;
+        while (elmToMove != RmOrder[mid]) {
+            mid = (lb+ub)/2;
+            if (RmOrder[mid] > elmToMove) {
+                ub = mid;
+            }
+            else {
+                lb = mid+1;
+            }
+        }
+        shuffledIdxs.push_back(mid);
+    }
+
+    std::vector<double> out;
+    out.resize(numObjs);
+    for (int i=0; i<numObjs; i++) {
+        out[shuffledIdxs[i]] = shuffleArray[i];
+    }
+
+    return out;
+}
+
+std::vector<double> bc1(std::array<double,2>* startpoint, int allocSize) {
     std::vector<double> out;
     out.reserve(allocSize);
     std::cout<<"--------"<<std::endl;
@@ -12,7 +41,7 @@ std::vector<double> bc1(std::array<double,2>* startpoint, std::array<double,2>* 
         auto pushvar = *(startpoint+i);
         double x = pushvar[0]; double y = pushvar[1];
         std::cout<<x<<", "<<y<<std::endl;
-        out.push_back(-x*(x-4) - y*(y-4));
+        out.push_back(-x*(x-4) + y*(y-4));
     }
 
     return out;
@@ -20,14 +49,14 @@ std::vector<double> bc1(std::array<double,2>* startpoint, std::array<double,2>* 
 
 int main() {
     std::vector<double> xdivs;
-    int nxElem = 10;
+    int nxElem = 2;
     xdivs.reserve(nxElem);
     for (int i = 0; i < nxElem; i++) {
         xdivs.push_back(4.0/nxElem);
     }
 
     std::vector<double> ydivs;
-    int nyElem = 10;
+    int nyElem = 2;
     ydivs.reserve(nyElem);
 
     for (int i = 0; i < nyElem; i++) {
@@ -60,6 +89,7 @@ int main() {
     DirichletBcs[3] = bc1;
 
     auto Bcs = Solvers::MatrixAssembly::EvalBoundaryCond(mesh, boundaryNodes, DirichletBcs);
+
     std::cout<<"lol"<<std::endl;
     std::cout<<Bcs<<std::endl;
 }

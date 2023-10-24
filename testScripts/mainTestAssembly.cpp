@@ -55,7 +55,45 @@ int main() {
     // std::vector<int> freeNodes = mesh.getFreeNodes();
 
     // Eigen::SparseMatrix ns = Solvers::MatrixAssembly::GetNullSpace(mesh, boundaryNodes, 1);
-    // Eigen::SparseMatrix cs = Solvers::MatrixAssembly::GetNullSpace(mesh, freeNodes, 0);
+    // Eigen::SparseMatrix cs = Solvers::MatrixAssembly::GetNullSpace(mesh, freeNodes, 0)
+
+    auto boundaryNodes = mesh.getBoundaryNodes();
+    auto freeNodes = mesh.getFreeNodes();
+
+    SpD ns(nNodes,boundaryNodes.size());
+    SpD cs(nNodes,freeNodes.size());
+
+    auto boundaryNodesInterm = boundaryNodes;
+    std::sort(boundaryNodesInterm.begin(), boundaryNodesInterm.end());
+
+    std::vector<int> boundaryNodesSorted;
+    boundaryNodesSorted.resize(boundaryNodes.size());
+
+    std::vector<int> moveIndices;
+    moveIndices.reserve(boundaryNodes.size());
+
+    for (int i=0; i<boundaryNodes.size(); i++) {
+        auto elmToMove = boundaryNodes[i];
+        int lb = 0; int ub = boundaryNodes.size()-1;
+        int mid = (lb+ub)/2;
+        while (elmToMove != boundaryNodesInterm[mid]) {
+            mid = (lb+ub)/2;
+            if (boundaryNodesInterm[mid] > elmToMove) {
+                ub = mid;
+            }
+            else {
+                lb = mid+1;
+            }
+        }
+        boundaryNodesSorted[mid] = elmToMove;
+        moveIndices.push_back(mid);
+    }
+
+    for (int i=0; i<boundaryNodes.size(); i++) {
+        std::cout<<boundaryNodes[i]<<"-> "<<boundaryNodesSorted[i]<<std::endl;
+    }
+
+    // Solvers::MatrixAssembly::GetExtensionMatrices(mesh,boundaryNodesSorted,freeNodes,ns,cs);
 
     // std::cout<<ns<<std::endl<<cs<<std::endl;
 }
