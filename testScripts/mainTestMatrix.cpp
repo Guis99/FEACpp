@@ -1,7 +1,5 @@
 #include "..\Dependencies\Eigen\Eigen"
 #include "..\Dependencies\unsupported\Eigen\KroneckerProduct"
-// #include "..\..\Dependencies\Eigen\LU"
-// #include "..\..\Dependencies\Eigen\Sparse"
 
 #include <iostream>
 #include <vector>
