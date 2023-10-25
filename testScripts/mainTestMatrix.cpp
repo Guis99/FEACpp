@@ -1,7 +1,7 @@
-#include "..\..\3PDep\eigen-3.4.0\Eigen\Eigen"
-#include "..\..\3PDep\eigen-3.4.0\unsupported\Eigen\KroneckerProduct"
-// #include "..\..\3PDep\eigen-3.4.0\Eigen\LU"
-// #include "..\..\3PDep\eigen-3.4.0\Eigen\Sparse"
+#include "..\Dependencies\Eigen\Eigen"
+#include "..\Dependencies\unsupported\Eigen\KroneckerProduct"
+// #include "..\..\Dependencies\Eigen\LU"
+// #include "..\..\Dependencies\Eigen\Sparse"
 
 #include <iostream>
 #include <vector>

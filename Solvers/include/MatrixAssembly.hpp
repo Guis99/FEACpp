@@ -1,6 +1,6 @@
-#include "..\..\..\3PDep\eigen-3.4.0\Eigen\Core"
-#include "..\..\..\3PDep\eigen-3.4.0\Eigen\Sparse"
-#include "..\..\..\3PDep\eigen-3.4.0\unsupported\Eigen\KroneckerProduct"
+#include "..\..\Dependencies\Eigen\Core"
+#include "..\..\Dependencies\Eigen\Sparse"
+#include "..\..\Dependencies\unsupported\Eigen\KroneckerProduct"
 #include "..\..\Meshing\Meshing.hpp"
 
 #ifndef SOLVERS

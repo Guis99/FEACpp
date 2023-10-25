@@ -166,12 +166,12 @@ std::vector<int> Meshing::BasicMesh::BasicMesh2D::getBoundaryNodes() {
 }
 
 std::vector<int> Meshing::BasicMesh::BasicMesh2D::getFreeNodes() {
-    int numXElems = xOffsets.size();
-    int numYElems = yOffsets.size();
+    int numXElems = xOffsets.size()-1;
+    int numYElems = yOffsets.size()-1;
     int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
 
     int numBoundaryNodes = 2*xWidth + 2*yWidth;
-    std::vector<int> freeNodes; freeNodes.reserve(nNodes() - numBoundaryNodes);
+    std::vector<int> freeNodes; freeNodes.reserve(this->nNodes() - numBoundaryNodes);
 
     for (auto &node : Nodes) {
         if (node.nClass == 0) {

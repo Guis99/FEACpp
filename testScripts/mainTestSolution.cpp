@@ -12,7 +12,7 @@ std::vector<double> bc1(std::array<double,2>* startpoint, int allocSize) {
         auto pushvar = *(startpoint+i);
         double x = pushvar[0]; double y = pushvar[1];
         std::cout<<x<<", "<<y<<std::endl;
-        out.push_back(-x*(x-4) - y*(y-4));
+        out.push_back(-x*(x-4) + y*(y-4));
     }
 
     return out;
@@ -57,7 +57,9 @@ int main() {
 
     double c = 1;
     double k = 1;
-    double f = 1;
+    double f;
+
+    std::cin>>f;
 
     DD x = Solvers::MatrixAssembly::PoissonSolve(mesh, DirichletBcs, c, k, f);
     x.resize(widthX,widthY);

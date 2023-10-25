@@ -1,4 +1,5 @@
 #include "..\include\MatrixAssembly.hpp"
+#include <iostream>
 
 using namespace Solvers;
 
@@ -7,7 +8,7 @@ DD MatrixAssembly::PoissonSolve(Meshing::BasicMesh::BasicMesh2D &inputMesh,
                 double c,
                 double k,
                 double f) {
-
+    
     std::vector<int> boundaryNodes = inputMesh.getBoundaryNodes();
     std::vector<int> freeNodes = inputMesh.getFreeNodes();
     int nNodes = inputMesh.nNodes();
