@@ -2,6 +2,7 @@
 #include "..\Meshing\Meshing.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 std::vector<double> bc1(std::array<double,2>* startpoint, int allocSize) {
@@ -62,6 +63,40 @@ int main() {
     std::cin>>f;
 
     DD x = Solvers::MatrixAssembly::PoissonSolve(mesh, DirichletBcs, c, k, f);
-    x.resize(widthX,widthY);
-    std::cout<<x<<std::endl;
+
+    std::vector<double> xGrid;
+    std::vector<double> yGrid;
+    xGrid.reserve(widthX);
+    yGrid.reserve(widthY);
+
+    for (int i=0; i<widthX; i++) {
+        auto xcoords = mesh.posOfNodes(std::vector<int>{i});
+        xGrid.push_back(xcoords[0][0]);
+    } 
+
+    for (int i=0; i<widthY; i++) {
+        int yIdx = i*widthX;
+        auto ycoords = mesh.posOfNodes(std::vector<int>{yIdx});
+        yGrid.push_back(ycoords[0][1]);
+    } 
+
+    Eigen::Map<DD> xOffsets(xGrid.data(), widthX, 1);
+    Eigen::Map<DD> yOffsets(yGrid.data(), widthY, 1);
+
+    std::ofstream fileX("x.txt");
+    std::ofstream fileY("y.txt");
+    std::ofstream fileZ("z.txt");
+
+    if (fileZ.is_open())
+    {
+        fileZ << x;
+    }
+    if (fileX.is_open())
+    {
+        fileX << xOffsets;
+    }
+    if (fileY.is_open())
+    {
+        fileY << yOffsets;
+    }
 }

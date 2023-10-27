@@ -1,4 +1,5 @@
 #include <sciplot/sciplot.hpp>
+#include <fstream>
 
 #include "..\Solvers\Solvers.hpp"
 #include "..\Meshing\Meshing.hpp"
@@ -69,5 +70,5 @@ int main() {
     x.resize(widthX,widthY);
     std::cout<<x<<std::endl;
 
-    
+
 }

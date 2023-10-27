@@ -208,3 +208,4 @@ FodyWeavers.xsd
 *.sln.iml
 *exe
 /Dependencies/**
+*txt
