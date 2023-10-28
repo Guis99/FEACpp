@@ -10,9 +10,14 @@ Z = np.loadtxt("z.txt")
 nx = x.size
 ny = y.size
 
-Z = np.resize(Z,[nx,ny])
+Z = np.resize(Z,[ny,nx])
 
-[X,Y] = np.meshgrid(y,x)
+[X,Y] = np.meshgrid(x,y)
+
+print(X)
+print(Y)
+print(Z)
+
  
 # Creating figure
 fig = plt.figure(figsize =(14, 9))

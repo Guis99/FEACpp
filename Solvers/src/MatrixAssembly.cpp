@@ -209,13 +209,27 @@ SpD MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, 
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(nElements * numElemNodes * numElemNodes);
 
+    auto combineXT = (DD)combinedX.transpose();
+    auto combineYT = (DD)combinedY.transpose();
+
     // Integrate over all elements
     DD localElemMat(numElemNodes, numElemNodes);
     for (auto &elm : inputMesh.Elements) {
         double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
         // calculate local matrix
+        // auto int1 = (DD)(combineXT*coeffMat);
+        // auto int2 = (DD)(combineYT*coeffMat);
+
+        // auto int5 = (DD)(int1*weightMat);
+        // auto int6 = (DD)(int2*weightMat);
+        // std::cout<<"here9"<<std::endl;
+        // auto int3 = (DD)(int5*combinedX*Ly/Lx);
+        // auto int4 = (DD)(int6*combinedY*Lx/Ly);
         localElemMat = combinedX.transpose()*coeffMat*weightMat*combinedX*Ly/Lx +
                         combinedY.transpose()*coeffMat*weightMat*combinedY*Lx/Ly;
+        // std::cout<<"here10"<<std::endl;
+        // localElemMat = int3+int4;
+        // std::cout<<"here11"<<std::endl;
         
         // Get nodes in element
         std::vector<int> nodesInElm = elm.Nodes;
@@ -226,7 +240,6 @@ SpD MatrixAssembly::StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, 
             }
         }
     }
-
     // Declare and construct sparse matrix from triplets
     SpD mat(nNodes,nNodes);
     mat.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -322,6 +335,10 @@ DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh,
         boundaryCalc = (*(DirichletBcs[i])) (currPointer,ptrIncr);
         std::copy(boundaryCalc.begin(), boundaryCalc.end(), currNodeValPointer); 
         currPointer += ptrIncr; currNodeValPointer += ptrIncr;
+    }
+
+    for (int i=0; i<numBoundaryNodes; i++) {
+        std::cout<<boundaryNodeValues[i]<<std::endl;
     }
 
     auto RmOrder = boundaryNodes;
