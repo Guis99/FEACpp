@@ -1,1 +1,0 @@
-#include "include\LagrangeInterpolant.hpp"

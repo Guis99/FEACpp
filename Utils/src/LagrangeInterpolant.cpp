@@ -1,7 +1,4 @@
-#include <iostream>
-#include <algorithm>
-#include "..\include\LagrangeInterpolant.hpp"
-#include <cmath>
+#include "..\include\Utils.hpp"
 
 std::vector<double> Utils::genGaussPoints(int degree) {
     std::vector<double> gaussPoints;
