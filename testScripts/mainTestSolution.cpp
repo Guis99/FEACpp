@@ -1,22 +1,42 @@
 #include "..\Solvers\Solvers.hpp"
 #include "..\Meshing\Meshing.hpp"
+#include "..\Dependencies\MathParser\MathParser.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 
 std::vector<double> bc1(std::array<double,2>* startpoint, int allocSize) {
-    std::vector<double> out;
-    out.reserve(allocSize);
-    std::cout<<"----------------"<<std::endl;
+    MathParser::QuickArray<double> x;
+    MathParser::QuickArray<double> y;
+
+    x.reserve(allocSize); y.reserve(allocSize);
+
     for (int i=0; i<allocSize; i++) {
-        auto pushvar = *(startpoint+i);
-        double x = pushvar[0]; double y = pushvar[1];
-        auto bcval = -x*(x-4) - y*(y-4);
-        out.push_back(bcval);
-        std::cout<<x<<", "<<y<<", "<<bcval<<std::endl;
-        
+        auto coord = *(startpoint+i);
+        x.push_back(coord[0]);
+        y.push_back(coord[1]);
     }
+
+    MathParser::InitMaps();
+    MathParser::SetVariable("x", x);
+    MathParser::SetVariable("y", y);
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    std::string str;
+    std::cout<<"here1"<<std::endl;
+    std::cout<<"Specify Boundary Condition: ";
+    std::cout<<"here2"<<std::endl;
+    std::getline(std::cin,str);
+    std::cout<<"here3"<<std::endl;
+    std::cout<<std::endl;
+
+    std::cout<<"here4"<<std::endl;
+    std::cout<<str<<std::endl;
+    auto result = MathParser::ParseText(str);
+    std::cout<<"here5"<<std::endl;
+
+    auto out = result.release();
 
     return out;
 }
