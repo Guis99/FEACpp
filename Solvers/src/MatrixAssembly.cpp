@@ -260,6 +260,11 @@ SpD MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, dou
     // Turn weight mat int vector and mult. by source since diagonal
     DvD sourceVec = f * weightMat.diagonal();
 
+    auto allNodesPos = inputMesh.allNodePos();
+    auto startpoint = allNodesPos.data(); auto allocSize = allNodesPos.size();
+
+    auto fEval = Utils::EvalSymbolicBC(startpoint, allocSize, "Specify source term");
+
     // Initialize i,j,v triplet list for sparse matrix
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(nElements * numElemNodes);
@@ -267,11 +272,19 @@ SpD MatrixAssembly::AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, dou
     // Integrate over all elements
     DvD localElemMat(numElemNodes);
     for (auto &elm : inputMesh.Elements) {
+        std::vector<int> nodesInElm = elm.Nodes;
         double Lx = elm.getWidth(); double Ly = elm.getHeight(); // Jacobian factors
         // calculate local matrix
-        localElemMat = sourceVec*Lx*Ly/4;
+        std::vector<double> collectSourceVals; collectSourceVals.reserve(numElemNodes);
+
+        for (int i : nodesInElm) {
+            collectSourceVals.push_back(fEval[i]);
+        }
+        Eigen::Map<DvD> sourceVector(collectSourceVals.data(), numElemNodes, 1);
+
+        localElemMat = weightMat*sourceVector*Lx*Ly/4;
         // Get nodes in element
-        std::vector<int> nodesInElm = elm.Nodes;
+        
         // Generate i,j,v triplets
         for (int i=0; i<numElemNodes; i++) {
             tripletList.emplace_back(nodesInElm[i], 0, localElemMat(i));
@@ -361,4 +374,18 @@ DvD MatrixAssembly::ComputeSolutionStationary(SpD &StiffnessMatrix, SpD &fVec, S
     DvD x = LuSolver.solve(F11 - A12 * boundaryVals);
     x = columnSpace * x + nullSpace * boundaryVals;
     return x;
+}
+
+DvD MatrixAssembly::ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
+                                SpD &MassMatrix, 
+                                SpD &fVec, SpD &columnSpace, 
+                                SpD &nullSpace, DvD &boundaryVals, 
+                                std::vector<double> &timeSteps) {
+    SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+    // Eliminate boundary rows and free columns
+    SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
+    // Eliminate boundary rows
+    SpD F11 = columnSpace.transpose() * fVec;
+
+
 }

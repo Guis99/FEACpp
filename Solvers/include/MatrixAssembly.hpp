@@ -11,8 +11,6 @@ typedef Eigen::SparseMatrix<double> SpD;
 typedef Eigen::MatrixXd DD;
 // Dynamically-sized vector of doubles
 typedef Eigen::VectorXd DvD;
-// pointer to function returning std::vector<float>
-typedef std::vector<double> (*bcFunc) (std::array<double,2>*,int); 
 
 namespace Solvers {
     namespace MatrixAssembly {
@@ -32,12 +30,12 @@ namespace Solvers {
                                         std::vector<int> &freeNodes,
                                         SpD &nullSpace,
                                         SpD &columnSpace);
-        DvD EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, std::vector<bcFunc>);
         DvD EvalDirichletBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes);
+        DvD EvalNeumannBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes);
         // Solve discretized PDE
         DvD ComputeSolutionStationary(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals);
-        DvD ComputeSolutionTimeDependent(SpD &StiffnessMatrix, 
-                                        SpD &MasMatrix, 
+        DvD ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
+                                        SpD &MassMatrix, 
                                         SpD &fVec, SpD &columnSpace, 
                                         SpD &nullSpace, DvD &boundaryVals, 
                                         std::vector<double> &timeSteps);

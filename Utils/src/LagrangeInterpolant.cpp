@@ -140,7 +140,14 @@ std::vector<double> Utils::EvalSymbolicBC(std::array<double,2>* startpoint, int 
     std::cout<<std::endl;
     auto result = MathParser::ParseText(str);
 
-    auto out = result.release();
+    std::vector<double> out;
+
+    if (result.size() == x.size()) {
+        out = result.release();
+    }
+    else {
+        out = std::vector<double>(x.size(), result.release()[0]);
+    }
 
     return out;
 }
