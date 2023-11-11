@@ -1,45 +1,9 @@
 #include "..\Solvers\Solvers.hpp"
 #include "..\Meshing\Meshing.hpp"
-#include "..\Dependencies\MathParser\MathParser.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
-
-std::vector<double> bc1(std::array<double,2>* startpoint, int allocSize) {
-    MathParser::QuickArray<double> x;
-    MathParser::QuickArray<double> y;
-
-    x.reserve(allocSize); y.reserve(allocSize);
-
-    for (int i=0; i<allocSize; i++) {
-        auto coord = *(startpoint+i);
-        x.push_back(coord[0]);
-        y.push_back(coord[1]);
-    }
-
-    MathParser::InitMaps();
-    MathParser::SetVariable("x", x);
-    MathParser::SetVariable("y", y);
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-    std::string str;
-    std::cout<<"here1"<<std::endl;
-    std::cout<<"Specify Boundary Condition: ";
-    std::cout<<"here2"<<std::endl;
-    std::getline(std::cin,str);
-    std::cout<<"here3"<<std::endl;
-    std::cout<<std::endl;
-
-    std::cout<<"here4"<<std::endl;
-    std::cout<<str<<std::endl;
-    auto result = MathParser::ParseText(str);
-    std::cout<<"here5"<<std::endl;
-
-    auto out = result.release();
-
-    return out;
-}
 
 int main() {
     int nxElem;
@@ -68,21 +32,12 @@ int main() {
     int widthY = nyElem*ydeg+1;
 
     Meshing::BasicMesh::BasicMesh2D mesh(xdeg, ydeg, xdivs, ydivs, 0, 0);   
-    std::cout<<mesh.nNodes()<<std::endl;
-
-    std::vector<bcFunc> DirichletBcs;
-    DirichletBcs.resize(4);
-
-    DirichletBcs[0] = bc1;
-    DirichletBcs[1] = bc1;
-    DirichletBcs[2] = bc1;
-    DirichletBcs[3] = bc1;
 
     double c = 1;
     double k = 1;
     double f = 0;
 
-    DD x = Solvers::MatrixAssembly::PoissonSolve(mesh, DirichletBcs, c, k, f);
+    DD x = Solvers::MatrixAssembly::PoissonSolve(mesh, c, k, f);
 
     std::vector<double> xGrid;
     std::vector<double> yGrid;
@@ -121,5 +76,4 @@ int main() {
     }
 
     x.resize(widthX,widthY);
-    std::cout<<x<<std::endl;
 }

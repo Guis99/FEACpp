@@ -4,7 +4,6 @@
 using namespace Solvers;
 
 DD MatrixAssembly::PoissonSolve(Meshing::BasicMesh::BasicMesh2D &inputMesh,
-                std::vector<bcFunc> DirichletBcs,
                 double c,
                 double k,
                 double f) {
@@ -15,7 +14,7 @@ DD MatrixAssembly::PoissonSolve(Meshing::BasicMesh::BasicMesh2D &inputMesh,
 
     SpD KMatrix = MatrixAssembly::StiffnessMatrix(inputMesh, k);
     SpD FMatrix = MatrixAssembly::AssembleFVec(inputMesh, f);
-    DvD boundaryVals = MatrixAssembly::EvalBoundaryCond(inputMesh, boundaryNodes, DirichletBcs);
+    DvD boundaryVals = MatrixAssembly::EvalDirichletBoundaryCond(inputMesh, boundaryNodes);
 
     SpD nullSpace(nNodes, boundaryNodes.size());
     SpD columnSpace(nNodes, freeNodes.size());

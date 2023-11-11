@@ -27,19 +27,27 @@ namespace Solvers {
         SpD MassMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double c);
         SpD StiffnessMatrix(Meshing::BasicMesh::BasicMesh2D &inputMesh, double k);
         SpD AssembleFVec(Meshing::BasicMesh::BasicMesh2D &inputMesh, double f);
-        // SpD GetNullSpace(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &nodesToAdd, bool nullSpace);
         void GetExtensionMatrices(Meshing::BasicMesh::BasicMesh2D &inputMesh,
                                         std::vector<int> &boundaryNodes, 
                                         std::vector<int> &freeNodes,
                                         SpD &nullSpace,
                                         SpD &columnSpace);
         DvD EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, std::vector<bcFunc>);
+        DvD EvalDirichletBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes);
+        // Solve discretized PDE
         DvD ComputeSolutionStationary(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals);
+        DvD ComputeSolutionTimeDependent(SpD &StiffnessMatrix, 
+                                        SpD &MasMatrix, 
+                                        SpD &fVec, SpD &columnSpace, 
+                                        SpD &nullSpace, DvD &boundaryVals, 
+                                        std::vector<double> &timeSteps);
+
+        // Set up problem
         DD PoissonSolve(Meshing::BasicMesh::BasicMesh2D &inputMesh,
-                std::vector<bcFunc> DirichletBcs,
                 double c,
                 double k,
                 double f);
+
     }
 }
 

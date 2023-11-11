@@ -1,4 +1,5 @@
 #include "..\include\Utils.hpp"
+#include "..\..\Dependencies\MathParser\MathParser.hpp"
 
 std::vector<double> Utils::genGaussPoints(int degree) {
     std::vector<double> gaussPoints;
@@ -112,6 +113,34 @@ std::vector<double> Utils::ReshuffleNodeVals(std::vector<int> RmOrder, std::vect
     for (int i=0; i<numObjs; i++) {
         out[shuffledIdxs[i]] = shuffleArray[i];
     }
+
+    return out;
+}
+
+std::vector<double> Utils::EvalSymbolicBC(std::array<double,2>* startpoint, int allocSize, std::string prompt) {
+    MathParser::QuickArray<double> x;
+    MathParser::QuickArray<double> y;
+
+    x.reserve(allocSize); y.reserve(allocSize);
+
+    for (int i=0; i<allocSize; i++) {
+        auto coord = *(startpoint+i);
+        x.push_back(coord[0]);
+        y.push_back(coord[1]);
+    }
+
+    MathParser::InitMaps();
+    MathParser::SetVariable("x", x);
+    MathParser::SetVariable("y", y);
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    std::string str;
+    std::cout<<prompt<<": ";
+    std::getline(std::cin,str);
+    std::cout<<std::endl;
+    auto result = MathParser::ParseText(str);
+
+    auto out = result.release();
 
     return out;
 }

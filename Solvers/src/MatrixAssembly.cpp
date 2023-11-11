@@ -310,8 +310,7 @@ void MatrixAssembly::GetExtensionMatrices(Meshing::BasicMesh::BasicMesh2D &input
     columnSpace.setFromTriplets(tripletListCS.begin(), tripletListCS.end());
 }
 
-DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes, std::vector<bcFunc> DirichletBcs) {
-    // See typedef for declaration of bcFunc
+DvD MatrixAssembly::EvalDirichletBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes) {
     int xdeg = inputMesh.xdeg; int ydeg = inputMesh.ydeg;
     int numXElems = inputMesh.xOffsets.size()-1; int numYElems = inputMesh.yOffsets.size()-1;
     int xWidth = xdeg*numXElems; int yWidth = ydeg*numYElems;
@@ -327,18 +326,15 @@ DvD MatrixAssembly::EvalBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh,
     std::array<double,2> *currPointer = boundaryNodePos.data();
     auto *currNodeValPointer = boundaryNodeValues.data();
     int ptrIncr;
+    std::string prompt = "Specify boundary condition";
 
     for (int i=0; i<4; i++) {
         // Alternate between x and y-iteration
         ptrIncr = i % 2 == 0 ? xWidth : yWidth;
         // Take bcFunc and evaluate it
-        boundaryCalc = (*(DirichletBcs[i])) (currPointer,ptrIncr);
+        boundaryCalc = Utils::EvalSymbolicBC(currPointer, ptrIncr, prompt);
         std::copy(boundaryCalc.begin(), boundaryCalc.end(), currNodeValPointer); 
         currPointer += ptrIncr; currNodeValPointer += ptrIncr;
-    }
-
-    for (int i=0; i<numBoundaryNodes; i++) {
-        std::cout<<boundaryNodeValues[i]<<std::endl;
     }
 
     auto RmOrder = boundaryNodes;

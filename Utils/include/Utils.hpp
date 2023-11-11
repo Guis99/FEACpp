@@ -1,6 +1,7 @@
 #define PI 3.1415926535897932384
 
 #include <vector>
+#include <array>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -12,4 +13,5 @@ namespace Utils {
     std::vector<double> numDeriv(double h, int k, std::vector<double> &evalPoints, std::vector<double> &gaussPoints);
     std::vector<double> integrateLagrange(std::vector<double> &gaussPoints);
     std::vector<double> ReshuffleNodeVals(std::vector<int> RmOrder, std::vector<int> CwOrder, std::vector<double> shuffleArray);
+    std::vector<double> EvalSymbolicBC(std::array<double,2>* startpoint, int allocSize, std::string prompt);
 }
