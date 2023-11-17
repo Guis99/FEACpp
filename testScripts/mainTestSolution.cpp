@@ -14,6 +14,7 @@ int main() {
     std::cin>>nyElem;
     std::cin>>xdeg;
     std::cin>>ydeg;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     std::vector<double> xdivs;
     xdivs.reserve(nxElem);

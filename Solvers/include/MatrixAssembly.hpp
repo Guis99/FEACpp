@@ -34,11 +34,13 @@ namespace Solvers {
         DvD EvalNeumannBoundaryCond(Meshing::BasicMesh::BasicMesh2D &inputMesh, std::vector<int> &boundaryNodes);
         // Solve discretized PDE
         DvD ComputeSolutionStationary(SpD &StiffnessMatrix, SpD &fVec, SpD &columnSpace, SpD &nullSpace, DvD &boundaryVals);
-        DvD ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
+        std::vector<DvD> ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
                                         SpD &MassMatrix, 
                                         SpD &fVec, SpD &columnSpace, 
                                         SpD &nullSpace, DvD &boundaryVals, 
-                                        std::vector<double> &timeSteps);
+                                        DvD &initialCondition,
+                                        double timeStep,
+                                        int numTimeSteps);
 
         // Set up problem
         DD PoissonSolve(Meshing::BasicMesh::BasicMesh2D &inputMesh,

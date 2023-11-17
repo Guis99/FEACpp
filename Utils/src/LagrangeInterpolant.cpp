@@ -132,13 +132,16 @@ std::vector<double> Utils::EvalSymbolicBC(std::array<double,2>* startpoint, int 
     MathParser::InitMaps();
     MathParser::SetVariable("x", x);
     MathParser::SetVariable("y", y);
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    // std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     std::string str;
     std::cout<<prompt<<": ";
     std::getline(std::cin,str);
     std::cout<<std::endl;
     auto result = MathParser::ParseText(str);
+
+    // std::cin.sync();
+    // std::cin.clear();
 
     std::vector<double> out;
 

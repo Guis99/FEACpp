@@ -376,16 +376,49 @@ DvD MatrixAssembly::ComputeSolutionStationary(SpD &StiffnessMatrix, SpD &fVec, S
     return x;
 }
 
-DvD MatrixAssembly::ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
+std::vector<DvD> MatrixAssembly::ComputeSolutionTimeDependent1stOrder(SpD &StiffnessMatrix, 
                                 SpD &MassMatrix, 
                                 SpD &fVec, SpD &columnSpace, 
                                 SpD &nullSpace, DvD &boundaryVals, 
-                                std::vector<double> &timeSteps) {
-    SpD A11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+                                DvD &initialCondition,
+                                double timeStep,
+                                int numTimeSteps) {
+    SpD K11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+    SpD M11 = columnSpace.transpose() * MassMatrix * columnSpace;
     // Eliminate boundary rows and free columns
-    SpD A12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
+    SpD K12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
     // Eliminate boundary rows
     SpD F11 = columnSpace.transpose() * fVec;
 
+    SpD combinedMats = timeStep * K11 + M11;
+    SpD dummyId; 
+    std::vector<Eigen::Triplet<double>> tripletListID;
 
+    tripletListID.reserve(combinedMats.rows());
+
+    for (int i=0; i<combinedMats.rows(); i++) {
+        tripletListID.emplace_back(i, i, 1.0);
+    }
+    
+    dummyId.setFromTriplets(tripletListID.begin(), tripletListID.end());
+
+    Eigen::SparseLU<SpD, Eigen::COLAMDOrdering<int> > LuSolver;    
+    LuSolver.analyzePattern(combinedMats);
+    LuSolver.factorize(combinedMats);
+
+    SpD combinedMatsInv = LuSolver.solve(dummyId);
+
+    std::vector<DvD> out;
+    out.reserve(numTimeSteps);
+    out.push_back(columnSpace * initialCondition + nullSpace * boundaryVals);
+    DvD prevState = initialCondition;
+    DvD x;
+
+    // Time-stepping
+    for (int i=1; i<numTimeSteps; i++) {
+        x = combinedMatsInv * (M11 * prevState + timeStep * F11);
+        prevState = x;
+        out.push_back(columnSpace * x + nullSpace * boundaryVals);
+    }
+    return out;
 }
