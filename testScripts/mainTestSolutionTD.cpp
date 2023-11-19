@@ -43,7 +43,8 @@ int main() {
     double timeStep;
     int numTimeSteps;
 
-    auto allNodePos = mesh.allNodePos();
+    auto freeNodes = mesh.getFreeNodes();
+    auto allNodePos = mesh.posOfNodes(freeNodes);
     auto startpoint = allNodePos.data();
     int allocSize = allNodePos.size();
     auto ICVec = Utils::EvalSymbolicBC(startpoint, allocSize, "Specify initial condition");
@@ -56,7 +57,6 @@ int main() {
     std::cin>>numTimeSteps;
 
     std::vector<int> boundaryNodes = mesh.getBoundaryNodes();
-    std::vector<int> freeNodes = mesh.getFreeNodes();
     int nNodes = mesh.nNodes();
 
     std::cout<<"Assembling LHS matrix"<<std::endl;
@@ -64,6 +64,7 @@ int main() {
     std::cout<<"Assembling Mass matrix"<<std::endl;
     SpD MMatrix = MatrixAssembly::MassMatrix(mesh, c);
     std::cout<<"Assembling RHS vector"<<std::endl;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     SpD FMatrix = MatrixAssembly::AssembleFVec(mesh, f);
     std::cout<<"Assembling boundary condition vector"<<std::endl;
     DvD boundaryVals = MatrixAssembly::EvalDirichletBoundaryCond(mesh, boundaryNodes);
@@ -95,14 +96,15 @@ int main() {
     Eigen::Map<DD> xOffsets(xGrid.data(), widthX, 1);
     Eigen::Map<DD> yOffsets(yGrid.data(), widthY, 1);
 
-    std::ofstream fileX("x.txt");
-    std::ofstream fileY("y.txt");
-    std::ofstream fileZ("z.txt");
+    std::ofstream fileX("xt.txt");
+    std::ofstream fileY("yt.txt");
+    std::ofstream fileZ("zt.txt");
 
     if (fileZ.is_open())
     {
         for (auto x : solns) {
             fileZ << x;
+            fileZ << "\n";
         }
     }
     if (fileX.is_open())

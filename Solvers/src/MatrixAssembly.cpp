@@ -383,41 +383,57 @@ std::vector<DvD> MatrixAssembly::ComputeSolutionTimeDependent1stOrder(SpD &Stiff
                                 DvD &initialCondition,
                                 double timeStep,
                                 int numTimeSteps) {
+    std::cout<<"here1"<<std::endl;
     SpD K11 = columnSpace.transpose() * StiffnessMatrix * columnSpace;
+    std::cout<<"here2"<<std::endl;
     SpD M11 = columnSpace.transpose() * MassMatrix * columnSpace;
+    std::cout<<"here3"<<std::endl;
     // Eliminate boundary rows and free columns
     SpD K12 = columnSpace.transpose() * StiffnessMatrix * nullSpace;
     // Eliminate boundary rows
     SpD F11 = columnSpace.transpose() * fVec;
+    std::cout<<"here4"<<std::endl;
 
     SpD combinedMats = timeStep * K11 + M11;
-    SpD dummyId; 
+    std::cout<<"here5"<<std::endl;
+    int system_size = combinedMats.rows();
+    SpD dummyId(system_size, system_size); 
     std::vector<Eigen::Triplet<double>> tripletListID;
+    std::cout<<"here6"<<std::endl;
 
     tripletListID.reserve(combinedMats.rows());
 
     for (int i=0; i<combinedMats.rows(); i++) {
+        std::cout<<"iter "<<i<<std::endl;
         tripletListID.emplace_back(i, i, 1.0);
     }
+    std::cout<<"here100"<<std::endl;
     
     dummyId.setFromTriplets(tripletListID.begin(), tripletListID.end());
-
+    std::cout<<"here7"<<std::endl;
     Eigen::SparseLU<SpD, Eigen::COLAMDOrdering<int> > LuSolver;    
     LuSolver.analyzePattern(combinedMats);
     LuSolver.factorize(combinedMats);
-
+    std::cout<<"here8"<<std::endl;
+    
     SpD combinedMatsInv = LuSolver.solve(dummyId);
 
     std::vector<DvD> out;
     out.reserve(numTimeSteps);
+    std::cout<<"here9"<<std::endl;
     out.push_back(columnSpace * initialCondition + nullSpace * boundaryVals);
+    std::cout<<"here10"<<std::endl;
     DvD prevState = initialCondition;
     DvD x;
 
     // Time-stepping
     for (int i=1; i<numTimeSteps; i++) {
+        std::cout<<"iter "<<i<<std::endl;
+        std::cout<<"here11"<<std::endl;
         x = combinedMatsInv * (M11 * prevState + timeStep * F11);
+        std::cout<<"here12"<<std::endl;
         prevState = x;
+        std::cout<<"here13"<<std::endl;
         out.push_back(columnSpace * x + nullSpace * boundaryVals);
     }
     return out;
